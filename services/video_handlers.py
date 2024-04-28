@@ -6,10 +6,21 @@ from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 import speech_recognition as sr
+import yt_dlp as youtube_dl
+from pydantic import BaseModel, Field
 
 from schemas.actions_schema import VideoEditing
 
 recognizer = sr.Recognizer()
+
+
+class YouTubeDlOptions(BaseModel):
+    format: str = 'bestaudio/best'  # choice of quality
+    extract_audio: bool = Field(default=False, alias='extractaudio')  # only keep the audio
+    audio_format: str = Field(default="mp3", alias='audioformat')  # convert to mp3
+    out_tmpl: str = Field(default='/video/%(title)s.%(ext)s', alias='outtmpl')  # name the file the ID of the video
+    no_play_list: bool = Field(default=True, alias='noplaylist')  # only download single song, not playlist
+    list_formats: bool = Field(default=False, alias='listformats')  # print a list of the formats to stdout and exit
 
 
 def _cut_video_file(path: str, start_time: int, end_time: int, new_file_name: str):
@@ -57,3 +68,20 @@ def extract_audio_from_video_file(path: str) -> str:
     audio_clip.write_audiofile(path)
     return path
 
+
+def get_youtube_video_info(link: str, options: YouTubeDlOptions, download: bool = False):
+    with youtube_dl.YoutubeDL(options.dict(by_alias=True)) as ydl:
+        data = ydl.extract_info(link, download=download)
+    return data
+
+
+def get_youtube_video_formats(link: str):
+    data = get_youtube_video_info(link=link, options=YouTubeDlOptions())
+    return data.get('formats', [data])
+
+
+def download_youtube_video(link: str, options: YouTubeDlOptions):
+    data = get_youtube_video_info(link=link, options=options, download=True)
+    file_name = data.get("requested_downloads", [])[0].get("filename")
+    path: list[str] = file_name.split('\\')
+    return path[1] if len(path) > 1 else path

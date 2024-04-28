@@ -9,10 +9,6 @@ from message_buffer import BaseMessageBuffer
 mb = BaseMessageBuffer()
 
 
-def test(path: str):
-    return 'ok'
-
-
 def _load_json() -> dict | None:
     if os.path.exists('results.json'):
         with open('results.json', "r", encoding='utf-8') as f:
