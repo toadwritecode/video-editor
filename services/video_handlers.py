@@ -53,7 +53,7 @@ def transcribe_audio(path: str) -> str:
 
 def extract_audio_from_video_file(path: str) -> str:
     audio_clip = AudioFileClip(path)
-    path = path.replace(".mp4", "_audio.mp3")
+    path = path.replace(".mp4", "_audio.wav")
     audio_clip.write_audiofile(path)
     return path
 

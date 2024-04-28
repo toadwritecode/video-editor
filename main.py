@@ -23,6 +23,7 @@ VIDEO_STORE_DIR = BASE_DIR / "video"
 
 class AvailableFormats(str, Enum):
     mp4 = 'mp4'
+    wav = 'wav'
 
     @classmethod
     def has_value(cls, value):
@@ -74,7 +75,7 @@ async def exact_audio_from_video_file(filename: str = Depends(_check_available_f
 
 
 @video_router.post("/transcribing-audio")
-async def exact_audio_from_video_file(filename: str = Depends(_check_available_formats)):
+async def exact_text_from_audio(filename: str = Depends(_check_available_formats)):
     path = str(VIDEO_STORE_DIR / filename)
 
     task_id = create_task(func=transcribe_audio, kwargs={'path': path})
@@ -84,7 +85,7 @@ async def exact_audio_from_video_file(filename: str = Depends(_check_available_f
 # Get tasks result
 
 @video_router.get("/tasks/result")
-async def exact_audio_from_video_file(task_id: str = Query(alias="taskId")):
+async def get_task_result(task_id: str = Query(alias="taskId")):
     result = get_result_task(task_id)
     return JSONResponse(status_code=201, content={'status': 'ok' if result else 'processing', 'result': result})
 
