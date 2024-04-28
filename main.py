@@ -1,19 +1,53 @@
-from fastapi import FastAPI, UploadFile, Depends, File
-from starlette.responses import FileResponse
+from fastapi import FastAPI, UploadFile, File, Depends, APIRouter, Query
+from starlette.responses import FileResponse, JSONResponse
 
-from schemas import VideoCutRequest
-from services import cut_video_file
-
+from async_tasks import create_task, test, get_result_task
+from conf.config import BASE_DIR
+from schemas.actions_schema import CutSchema
+from security import get_basic_auth
+from services.video_handler import cut_video_file, extract_audio_from_video_file, transcribe_audio
 
 app = FastAPI()
 
+video_router = APIRouter(dependencies=[Depends(get_basic_auth)], prefix='/video')
 
-@app.post("/video/crop")
-async def crop_video_file(request: VideoCutRequest = Depends(), file: UploadFile = File()):
-    var = file.filename
-    with open(var, "wb") as f:
+VIDEO_STORE_DIR = BASE_DIR / "video"
+
+
+@video_router.post("/cropping")
+async def crop_video_file(cut: CutSchema, filename: str):
+    path = str(VIDEO_STORE_DIR / filename)
+    cropped_video_path = cut_video_file(path, cut.cut_from, cut.cut_to)
+    return FileResponse(cropped_video_path)
+
+
+@video_router.post("/uploading")
+async def upload_video_file(file: UploadFile = File()):
+    filename = file.filename
+    with open(VIDEO_STORE_DIR / filename, "wb") as f:
         content = file.file.read()
         f.write(content)
+    return JSONResponse(status_code=200, content={'status': 'ok', "filename": filename})
 
-    cut_video_file(file.filename, request.cut_from, request.cut_to)
-    return FileResponse(file.filename.replace(".mp4", "") + "_cropped.mp4")
+
+@video_router.post("/exacting-audio")
+async def exact_audio_from_video_file(filename: str):
+    path = str(VIDEO_STORE_DIR / filename)
+    audio_path = extract_audio_from_video_file(path)
+    return FileResponse(audio_path)
+
+
+@video_router.post("/transcribing-audio")
+async def exact_audio_from_video_file(filename: str):
+    path = str(VIDEO_STORE_DIR / filename)
+    task_id = create_task(func=transcribe_audio, kwargs={'path': path})
+    return JSONResponse(status_code=201, content={'taskId': str(task_id)})
+
+
+@video_router.get("/transcribing-audio/result")
+async def exact_audio_from_video_file(task_id: str = Query(alias="taskId")):
+    result = get_result_task(task_id)
+    return JSONResponse(status_code=201, content={'status': 'ok' if result else 'processing', 'result': result})
+
+
+app.include_router(video_router)
