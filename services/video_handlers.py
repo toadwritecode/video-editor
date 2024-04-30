@@ -18,7 +18,7 @@ class YouTubeDlOptions(BaseModel):
     format: str = 'bestaudio/best'  # choice of quality
     extract_audio: bool = Field(default=False, alias='extractaudio')  # only keep the audio
     audio_format: str = Field(default="mp3", alias='audioformat')  # convert to mp3
-    out_tmpl: str = Field(default='/video/%(title)s.%(ext)s', alias='outtmpl')  # name the file the ID of the video
+    out_tmpl: str = Field(default='/storage/%(title)s.%(ext)s', alias='outtmpl')  # name the file the ID of the video
     no_play_list: bool = Field(default=True, alias='noplaylist')  # only download single song, not playlist
     list_formats: bool = Field(default=False, alias='listformats')  # print a list of the formats to stdout and exit
 

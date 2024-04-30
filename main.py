@@ -20,7 +20,7 @@ file_router = APIRouter(dependencies=[Depends(get_basic_auth)], prefix='/files')
 # public
 auth_router = APIRouter()
 
-VIDEO_STORE_DIR = BASE_DIR / "video"
+STORAGE_DIR = BASE_DIR / "storage"
 
 
 class AvailableFormats(str, Enum):
@@ -46,19 +46,19 @@ def _check_available_formats(filename: str):
 # Files
 @file_router.get("/{filename}")
 async def get_file(filename: str):
-    path = str(VIDEO_STORE_DIR / filename)
+    path = str(STORAGE_DIR / filename)
     return FileResponse(path=path)
 
 
 @file_router.get("/")
 async def get_available_uploading_files():
-    return JSONResponse(content={"data": {"available": os.listdir(VIDEO_STORE_DIR)}})
+    return JSONResponse(content={"data": {"available": os.listdir(STORAGE_DIR)}})
 
 
 @file_router.post("/")
 async def upload_file(file: UploadFile = File()):
     filename = file.filename
-    with open(VIDEO_STORE_DIR / filename, "wb") as f:
+    with open(STORAGE_DIR / filename, "wb") as f:
         content = file.file.read()
         f.write(content)
     return JSONResponse(content={'status': 'ok', "filename": filename})
@@ -82,7 +82,7 @@ async def get_available_formats(link: str):
 # Editing
 @video_router.post("/cropping")
 async def crop_video_file(editing: VideoEditing, filename: str = Depends(_check_available_formats)):
-    path = str(VIDEO_STORE_DIR / filename)
+    path = str(STORAGE_DIR / filename)
 
     task_id = create_task(func=edit_video, kwargs={'editing': editing, 'path': path})
     return JSONResponse(content={'taskId': str(task_id)})
@@ -90,7 +90,7 @@ async def crop_video_file(editing: VideoEditing, filename: str = Depends(_check_
 
 @video_router.post("/exacting-audio")
 async def exact_audio_from_video_file(filename: str = Depends(_check_available_formats)):
-    path = str(VIDEO_STORE_DIR / filename)
+    path = str(STORAGE_DIR / filename)
 
     task_id = create_task(func=extract_audio_from_video_file, kwargs={'path': path})
     return JSONResponse(content={'taskId': str(task_id)})
@@ -98,7 +98,7 @@ async def exact_audio_from_video_file(filename: str = Depends(_check_available_f
 
 @video_router.post("/transcribing-audio")
 async def exact_text_from_audio(filename: str = Depends(_check_available_formats)):
-    path = str(VIDEO_STORE_DIR / filename)
+    path = str(STORAGE_DIR / filename)
 
     task_id = create_task(func=transcribe_audio, kwargs={'path': path})
     return JSONResponse(content={'taskId': str(task_id)})
