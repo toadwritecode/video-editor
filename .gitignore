@@ -1,4 +1,7 @@
 /model/
-/.idea/
 .env
 /venv/
+
+# Text Editor
+.vscode
+.idea/
