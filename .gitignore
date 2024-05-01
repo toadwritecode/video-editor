@@ -1,3 +1,5 @@
+__pycache__/
+
 /model/
 .env
 /venv/
@@ -5,3 +7,4 @@
 # Text Editor
 .vscode
 .idea/
+/db.dat

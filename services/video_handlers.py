@@ -52,7 +52,8 @@ def edit_video(editing: VideoEditing, path: str):
     merged_video_name = _merge_video_files(frame_paths)
 
     # remove used frames
-    [os.remove(path) for path in frame_paths]
+    for path in frame_paths:
+        os.remove(path)
 
     return merged_video_name
 

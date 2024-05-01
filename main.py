@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, JSONResponse
 
 from async_tasks import create_task, get_result_task
-from conf.config import BASE_DIR
+from conf.config import BASE_DIR, settings
 from schemas.actions_schema import VideoEditing
 from security import get_basic_auth, authenticate_user
 from services.video_handlers import extract_audio_from_video_file, transcribe_audio, edit_video, \
@@ -28,7 +28,7 @@ app.add_middleware(
 video_router = APIRouter(prefix='/video')
 file_router = APIRouter(prefix='/files')
 
-if os.getenv("SECURITY_ENABLED") == True:
+if settings.SECURITY_ENABLED:
     video_router.dependencies.append(Depends(get_basic_auth))
     file_router.dependencies.append(Depends(get_basic_auth))
 
