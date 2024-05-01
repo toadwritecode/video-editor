@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 
 from moviepy.audio.io.AudioFileClip import AudioFileClip
@@ -49,6 +50,9 @@ def edit_video(editing: VideoEditing, path: str):
         frame_paths.append(frame_path)
 
     merged_video_name = _merge_video_files(frame_paths)
+
+    # remove used frames
+    [os.remove(path) for path in frame_paths]
 
     return merged_video_name
 

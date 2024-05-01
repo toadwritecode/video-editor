@@ -2,6 +2,7 @@ import os
 from enum import Enum
 
 from fastapi import FastAPI, UploadFile, File, Depends, APIRouter, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, JSONResponse
 
 from async_tasks import create_task, get_result_task
@@ -13,9 +14,23 @@ from services.video_handlers import extract_audio_from_video_file, transcribe_au
 
 app = FastAPI()
 
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # private
-video_router = APIRouter(dependencies=[Depends(get_basic_auth)], prefix='/video')
-file_router = APIRouter(dependencies=[Depends(get_basic_auth)], prefix='/files')
+video_router = APIRouter(prefix='/video')
+file_router = APIRouter(prefix='/files')
+
+if os.getenv("SECURITY_ENABLED") == True:
+    video_router.dependencies.append(Depends(get_basic_auth))
+    file_router.dependencies.append(Depends(get_basic_auth))
 
 # public
 auth_router = APIRouter()
@@ -52,7 +67,9 @@ async def get_file(filename: str):
 
 @file_router.get("/")
 async def get_available_uploading_files():
-    return JSONResponse(content={"data": {"available": os.listdir(VIDEO_STORE_DIR)}})
+    return JSONResponse(
+        content=[{"name": file, "path": os.path.abspath(file)} for file in os.listdir(VIDEO_STORE_DIR)]
+    )
 
 
 @file_router.post("/")
@@ -65,7 +82,7 @@ async def upload_file(file: UploadFile = File()):
 
 
 # YouTube
-@video_router.get("/youtube/")
+@file_router.get("/youtube/")
 async def download_video_from_youtube(link: str,
                                       format_: str | None = Query(alias="format", default="mp4")):
     options = YouTubeDlOptions(format=format_)
@@ -80,7 +97,7 @@ async def get_available_formats(link: str):
 
 
 # Editing
-@video_router.post("/cropping")
+@video_router.post("/crop")
 async def crop_video_file(editing: VideoEditing, filename: str = Depends(_check_available_formats)):
     path = str(VIDEO_STORE_DIR / filename)
 
