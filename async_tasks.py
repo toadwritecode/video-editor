@@ -38,7 +38,7 @@ def create_task(func: Callable, kwargs: dict):
     return task_id
 
 
-async def execute_task(task):
+def execute_task(task):
     if task:
         return {'task': task.get('id'),
                 'result': task.get('task')(**task.get('kwargs'))}
@@ -48,7 +48,7 @@ async def run_async_tasks_handling():
     while True:
         task = mb.get()
 
-        result = await execute_task(task)
+        result = execute_task(task)
         if result:
             save_results_task(result)
 
