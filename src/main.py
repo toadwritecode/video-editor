@@ -35,7 +35,7 @@ if settings.SECURITY_ENABLED:
 # public
 auth_router = APIRouter()
 
-STORAGE_DIR = BASE_DIR.parent.parent / settings.STORAGE_NAME
+STORAGE_DIR = BASE_DIR / settings.STORAGE_NAME
 
 
 class AvailableFormats(str, Enum):

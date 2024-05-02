@@ -13,6 +13,7 @@ services:
             - ./src/.env
         volumes:
           - ./src/storage:/src/storage
+          - ./src/db:/src/db
 
     worker:
       platform: linux/amd64
@@ -26,3 +27,4 @@ services:
         - ./src/.env
       volumes:
         - ./src/storage:/src/storage
+        - ./src/db:/src/db

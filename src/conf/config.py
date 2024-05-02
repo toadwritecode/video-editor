@@ -1,8 +1,11 @@
-from pathlib import Path
+import os
+# from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent
+
+BASE_DIR = os.getcwd()
 
 
 class Settings(BaseSettings):
@@ -13,7 +16,7 @@ class Settings(BaseSettings):
 
     class Config:
         case_sensitive = True
-        env_file = BASE_DIR / ".env"
+        env_file = BASE_DIR + "/.env"
 
 
 settings = Settings()

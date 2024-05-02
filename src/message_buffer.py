@@ -2,7 +2,7 @@ import os
 import pickle
 from datetime import datetime
 
-path_db = 'storage/db.dat'
+path_db = 'db/db.dat'
 
 
 def load_all(filename):

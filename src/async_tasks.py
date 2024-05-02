@@ -10,8 +10,8 @@ mb = BaseMessageBuffer()
 
 
 def _load_json() -> dict | None:
-    if os.path.exists('storage/results.json'):
-        with open('storage/results.json', "r", encoding='utf-8') as f:
+    if os.path.exists('db/results.json'):
+        with open('db/results.json', "r", encoding='utf-8') as f:
             data = json.load(f)
         return data
 
@@ -28,7 +28,7 @@ def save_results_task(task: dict):
 
     results_tasks.update({task.get("task"): task.get('result')})
 
-    with open('storage/results.json', "w", encoding='utf-8') as f:
+    with open('db/results.json', "w", encoding='utf-8') as f:
         json.dump(results_tasks, f)
 
 
