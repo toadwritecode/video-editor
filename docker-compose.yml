@@ -1,0 +1,28 @@
+version: '3'
+services:
+    api-application:
+        platform: linux/amd64
+        container_name: api-application
+        build:
+          context: ./
+          dockerfile: ./devops/Dockerfile
+        ports:
+          - '127.0.0.1:8000:8000'
+        command: [ "uvicorn", "main:app", "--host=0.0.0.0", "--port=8000", "--reload" ]
+        env_file:
+            - ./src/.env
+        volumes:
+          - ./src/storage:/src/storage
+
+    worker:
+      platform: linux/amd64
+      container_name: worker
+      tty: true
+      build:
+        context: ./
+        dockerfile: ./devops/Dockerfile
+      command: [ '/bin/sh', '-c', 'python async_tasks.py' ]
+      env_file:
+        - ./src/.env
+      volumes:
+        - ./src/storage:/src/storage
