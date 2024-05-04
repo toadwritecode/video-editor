@@ -67,9 +67,12 @@ async def get_file(filename: str):
 
 @file_router.get("/")
 async def get_available_uploading_files():
-    return JSONResponse(
-        content=[{"name": file, "path": os.path.abspath(file)} for file in os.listdir(STORAGE_DIR)]
-    )
+    files = []
+
+    if os.path.exists(STORAGE_DIR):
+        files = [{"name": file, "path": os.path.abspath(file)} for file in os.listdir(STORAGE_DIR)]
+
+    return JSONResponse(content=files)
 
 
 @file_router.post("/")
