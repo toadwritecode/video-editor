@@ -72,7 +72,8 @@ def extract_audio_from_video_file(path: str) -> str:
     audio_clip = AudioFileClip(path)
     path = path.replace(".mp4", "_audio.wav")
     audio_clip.write_audiofile(path)
-    return path
+    file_name = path.split("/")[-1]
+    return file_name
 
 
 def get_youtube_video_info(link: str, options: YouTubeDlOptions, download: bool = False):

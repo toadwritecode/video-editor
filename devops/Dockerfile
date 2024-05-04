@@ -6,8 +6,8 @@ ENV \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1
 
-
-COPY /src /src
-RUN pip3 install --upgrade pip
-RUN pip3 install -r /src/requirements.txt
 WORKDIR /src
+ADD /requirements.txt /src/requirements.txt
+RUN pip3 install -r requirements.txt
+COPY /src /src
+COPY /model /src/model

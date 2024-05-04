@@ -1,10 +1,10 @@
 __pycache__/
 
-/src/model/
+/model/
 src/.env
 /venv/
 
 # Text Editor
 .vscode
 .idea/
-/src/db/db.dat
+/src/db/

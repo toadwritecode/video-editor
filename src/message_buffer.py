@@ -2,7 +2,9 @@ import os
 import pickle
 from datetime import datetime
 
-path_db = 'db/db.dat'
+from conf.config import BASE_DIR
+
+path_db = BASE_DIR / 'db/db.dat'
 
 
 def load_all(filename):

@@ -4,14 +4,17 @@ import os.path
 import uuid
 from typing import Callable
 
+from conf.config import BASE_DIR
 from message_buffer import BaseMessageBuffer
 
 mb = BaseMessageBuffer()
 
+path_db = BASE_DIR / 'db/results.json'
+
 
 def _load_json() -> dict | None:
-    if os.path.exists('db/results.json'):
-        with open('db/results.json', "r", encoding='utf-8') as f:
+    if os.path.exists(path_db):
+        with open(path_db, "r", encoding='utf-8') as f:
             data = json.load(f)
         return data
 
@@ -28,7 +31,7 @@ def save_results_task(task: dict):
 
     results_tasks.update({task.get("task"): task.get('result')})
 
-    with open('db/results.json', "w", encoding='utf-8') as f:
+    with open(path_db, "w", encoding='utf-8') as f:
         json.dump(results_tasks, f)
 
 
