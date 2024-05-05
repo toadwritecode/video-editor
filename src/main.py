@@ -70,7 +70,11 @@ async def get_available_uploading_files():
     files = []
 
     if os.path.exists(STORAGE_DIR):
-        files = [{"name": file, "path": os.path.abspath(file)} for file in os.listdir(STORAGE_DIR)]
+        files = [{
+            "name": file,
+            "path": os.path.abspath(file),
+            "format": file.split('.')[1]
+        } for file in os.listdir(STORAGE_DIR)]
 
     return JSONResponse(content=files)
 

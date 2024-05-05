@@ -11,6 +11,7 @@ class CamelCaseSchema(BaseModel):
 class CutSchema(CamelCaseSchema):
     cut_from: int
     cut_to: int
+    times: int = 1
 
 
 class VideoEditing(CamelCaseSchema):

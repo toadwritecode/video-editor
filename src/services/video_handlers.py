@@ -48,7 +48,7 @@ def edit_video(editing: VideoEditing, path: str):
     for frame in editing.frames:
         piece_id = str(uuid.uuid4())
         frame_path = _cut_video_file(path, frame.cut_from, frame.cut_to, piece_id)
-        frame_paths.append(frame_path)
+        frame_paths.extend([frame_path] * frame.times)
 
     merged_video_name = _merge_video_files(frame_paths)
 
