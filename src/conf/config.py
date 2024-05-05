@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     AUTH_API_PASSWORD: str = ''
     SECURITY_ENABLED: bool = False
     STORAGE_NAME: str = "storage"
+    SECRET_KEY: str
+    REFRESH_KEY: str
 
     class Config:
         case_sensitive = True

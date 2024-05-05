@@ -8,10 +8,9 @@ from starlette.responses import FileResponse, JSONResponse
 from async_tasks import create_task, get_result_task
 from conf.config import BASE_DIR, settings
 from schemas.actions_schema import VideoEditing
-from security import get_basic_auth, authenticate_user
+from security import get_current_active_user, router as auth_router
 from services.video_handlers import extract_audio_from_video_file, transcribe_audio, edit_video, \
     get_youtube_video_formats, YouTubeDlOptions, download_youtube_video
-
 app = FastAPI()
 
 origins = ["*"]
@@ -29,11 +28,8 @@ video_router = APIRouter(prefix='/video')
 file_router = APIRouter(prefix='/files')
 
 if settings.SECURITY_ENABLED:
-    video_router.dependencies.append(Depends(get_basic_auth))
-    file_router.dependencies.append(Depends(get_basic_auth))
-
-# public
-auth_router = APIRouter()
+    video_router.dependencies.append(Depends(get_current_active_user))
+    file_router.dependencies.append(Depends(get_current_active_user))
 
 STORAGE_DIR = BASE_DIR / settings.STORAGE_NAME
 
@@ -136,13 +132,7 @@ async def get_task_result(task_id: str = Query(alias="taskId")):
     return JSONResponse(content={'status': 'ok' if result else 'processing', 'result': result})
 
 
-# Authorize
-@auth_router.get("/token")
-async def get_token(username: str, password: str):
-    token = authenticate_user(username, password)
-    return JSONResponse(content={"token": token})
-
-
 app.include_router(video_router)
 app.include_router(auth_router)
 app.include_router(file_router)
+app.include_router(auth_router)

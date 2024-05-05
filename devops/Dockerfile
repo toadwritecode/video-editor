@@ -8,6 +8,6 @@ ENV \
 
 WORKDIR /src
 ADD /requirements.txt /src/requirements.txt
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt --default-timeout=100
 COPY /src /src
 COPY /model /src/model
