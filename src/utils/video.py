@@ -40,7 +40,7 @@ def _merge_video_files(paths: list[str]):
     final_clip = concatenate_videoclips(loaded_video_list)
 
     final_clip.write_videofile(merged_video_name)
-    return merged_video_name
+    return merged_video_name.split('\\')[-1]
 
 
 def edit_video(editing: VideoEditing, path: str):
@@ -52,7 +52,7 @@ def edit_video(editing: VideoEditing, path: str):
 
     merged_video_name = _merge_video_files(frame_paths)
 
-    # remove used frames
+    # # remove used frames
     for path in frame_paths:
         os.remove(path)
 
@@ -72,7 +72,7 @@ def extract_audio_from_video_file(path: str) -> str:
     audio_clip = AudioFileClip(path)
     path = path.replace(".mp4", "_audio.wav")
     audio_clip.write_audiofile(path)
-    file_name = path.split("/")[-1]
+    file_name = path.split("\\")[-1]
     return file_name
 
 
@@ -91,4 +91,4 @@ def download_youtube_video(link: str, options: YouTubeDlOptions):
     data = get_youtube_video_info(link=link, options=options, download=True)
     file_name = data.get("requested_downloads", [])[0].get("filename")
     path: list[str] = file_name.split('\\')
-    return path[1] if len(path) > 1 else path
+    return path[-1] if len(path) > 1 else path

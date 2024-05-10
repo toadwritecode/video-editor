@@ -1,16 +1,18 @@
-import os
 from enum import Enum
 
 from fastapi import FastAPI, UploadFile, File, Depends, APIRouter, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse, JSONResponse
 
+import models
 from async_tasks import create_task, get_result_task
 from conf.config import BASE_DIR, settings
+from repository import Repository
 from schemas.actions_schema import VideoEditing
-from security import get_current_active_user, router as auth_router
-from services.video_handlers import extract_audio_from_video_file, transcribe_audio, edit_video, \
-    get_youtube_video_formats, YouTubeDlOptions, download_youtube_video
+from security import router as auth_router, get_current_user
+from services import handlers
+from queries import queries
+from utils.video import transcribe_audio, get_youtube_video_formats, YouTubeDlOptions
 app = FastAPI()
 
 origins = ["*"]
@@ -28,10 +30,11 @@ video_router = APIRouter(prefix='/video')
 file_router = APIRouter(prefix='/files')
 
 if settings.SECURITY_ENABLED:
-    video_router.dependencies.append(Depends(get_current_active_user))
-    file_router.dependencies.append(Depends(get_current_active_user))
+    video_router.dependencies.append(Depends(get_current_user))
+    file_router.dependencies.append(Depends(get_current_user))
 
 STORAGE_DIR = BASE_DIR / settings.STORAGE_NAME
+repository = Repository()
 
 
 class AvailableFormats(str, Enum):
@@ -56,40 +59,41 @@ def _check_available_formats(filename: str):
 
 # Files
 @file_router.get("/{filename}")
-async def get_file(filename: str):
-    path = str(STORAGE_DIR / filename)
+async def get_file(filename: str, current_user=Depends(get_current_user)):
+    path = queries.get_path_user_file(repository, current_user.username, filename)
+    if not path:
+        raise HTTPException(status_code=404, detail="File is not exists")
     return FileResponse(path=path)
 
 
 @file_router.get("/")
-async def get_available_uploading_files():
-    files = []
-
-    if os.path.exists(STORAGE_DIR):
-        files = [{
-            "name": file,
-            "path": os.path.abspath(file),
-            "format": file.split('.')[1]
-        } for file in os.listdir(STORAGE_DIR)]
-
+async def get_available_uploading_files(current_user=Depends(get_current_user)):
+    files = queries.get_user_available_files(repository, current_user.username)
     return JSONResponse(content=files)
 
 
 @file_router.post("/")
-async def upload_file(file: UploadFile = File()):
-    filename = file.filename
-    with open(STORAGE_DIR / filename, "wb") as f:
-        content = file.file.read()
-        f.write(content)
-    return JSONResponse(content={'status': 'ok', "filename": filename})
+async def upload_file(file: UploadFile = File(), current_user: models.User = Depends(get_current_user)):
+    try:
+        filename = handlers.save_user_file(repository, current_user.username, file)
+        return JSONResponse(content={'status': 'ok', "filename": filename})
+    except models.FileError as exc:
+        raise HTTPException(status_code=400, detail=[
+            {"type": exc.__class__.__name__,
+             "loc": "file",
+             "msg": str(exc)},
+        ])
 
 
 # YouTube
 @file_router.get("/youtube/")
 async def download_video_from_youtube(link: str,
-                                      format_: str | None = Query(alias="format", default="mp4")):
+                                      format_: str | None = Query(alias="format", default="mp4"),
+                                      current_user=Depends(get_current_user)):
     options = YouTubeDlOptions(format=format_)
-    task_id = create_task(func=download_youtube_video, kwargs={'link': link, "options": options})
+    task_id = create_task(func=handlers.save_user_file_from_youtube, kwargs={
+                                                                    'link': link, "options": options,
+                                                                    'username': current_user.username})
     return JSONResponse(content={'taskId': str(task_id)})
 
 
@@ -101,18 +105,20 @@ async def get_available_formats(link: str):
 
 # Editing
 @video_router.post("/crop")
-async def crop_video_file(editing: VideoEditing, filename: str = Depends(_check_available_formats)):
-    path = str(STORAGE_DIR / filename)
+async def crop_video_file(editing: VideoEditing, filename: str = Depends(_check_available_formats),
+                          current_user=Depends(get_current_user)):
 
-    task_id = create_task(func=edit_video, kwargs={'editing': editing, 'path': path})
+    task_id = create_task(func=handlers.edit_user_video, kwargs={'editing': editing,
+                                                                 'username': current_user.username,
+                                                                 'filename': filename})
     return JSONResponse(content={'taskId': str(task_id)})
 
 
 @video_router.post("/exacting-audio")
-async def exact_audio_from_video_file(filename: str = Depends(_check_available_formats)):
-    path = str(STORAGE_DIR / filename)
-
-    task_id = create_task(func=extract_audio_from_video_file, kwargs={'path': path})
+async def exact_audio_from_video_file(filename: str = Depends(_check_available_formats),
+                                      current_user=Depends(get_current_user)):
+    task_id = create_task(func=handlers.extract_user_audio_from_video_file,
+                          kwargs={'username': current_user.username, "filename": filename})
     return JSONResponse(content={'taskId': str(task_id)})
 
 
