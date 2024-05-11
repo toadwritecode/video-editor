@@ -5,7 +5,7 @@ src/.env
 /venv/
 
 /src/storage/
-/src/new.db
+/src/db/new.db
 
 # Text Editor
 .vscode

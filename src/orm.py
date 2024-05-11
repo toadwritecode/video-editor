@@ -9,7 +9,7 @@ from conf.config import BASE_DIR
 import models
 from models import User
 
-db_path = BASE_DIR / "new.db"
+db_path = BASE_DIR / "db/new.db"
 
 engine = create_engine(f'sqlite:///{db_path}', echo=True)
 metadata = MetaData()

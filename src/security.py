@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status, APIRouter
+from fastapi import Depends, HTTPException, status, APIRouter, Body
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -206,9 +206,13 @@ def _verify_refresh_token(token: str):
     return token_data
 
 
-@router.get("/refresh")
-def get_new_access_token(token: str):
-    refresh_data = _verify_refresh_token(token)
+class RefreshSchema(CamelCaseSchema):
+    refresh: str
+
+
+@router.post("/token/refresh")
+def get_new_access_token(token: RefreshSchema):
+    refresh_data = _verify_refresh_token(token.refresh)
 
     new_access_token = create_access_token(refresh_data.dict())
     return {

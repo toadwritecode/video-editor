@@ -6,7 +6,8 @@ import models
 from conf.config import settings, BASE_DIR
 from repository import Repository
 from schemas.actions_schema import VideoEditing
-from utils.video import download_youtube_video, YouTubeDlOptions, extract_audio_from_video_file, edit_video, transcribe_audio
+from utils.video import download_youtube_video, YouTubeDlOptions, extract_audio_from_video_file, edit_video
+from utils.audio import transcribe_audio
 
 
 STORAGE_DIR = BASE_DIR / settings.STORAGE_NAME
@@ -72,7 +73,6 @@ def extract_user_audio_from_video_file(
             pass
 
 
-
 def edit_user_video(
     editing: VideoEditing,
     user_id: int,
@@ -111,14 +111,17 @@ def transcribe_text_from_audio_file(
 
         return transcribe_audio(file.path)
 
+
 def get_file_by_uuid(repo: Repository, id: uuid.UUID):
-    return repo.get_file_by_uuid(id)
+    with repo:
+        return repo.get_file_by_uuid(id)
 
 
 def update_file_uuid_by_name(repo: Repository,
                              id: uuid.UUID,
                              name: str):
-    file = repo.get_file_by_name(name)
-    file.uuid = id
-    repo.commit()
+    with repo:
+        file = repo.get_file_by_name(name)
+        file.uuid = id
+        repo.commit()
 

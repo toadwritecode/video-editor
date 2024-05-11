@@ -1,19 +1,14 @@
-import json
 import os
 import uuid
-
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
-import speech_recognition as sr
 import yt_dlp as youtube_dl
 from pydantic import BaseModel, Field
 
 from conf.config import settings
 from schemas.actions_schema import VideoEditing
-
-recognizer = sr.Recognizer()
 
 
 class YouTubeDlOptions(BaseModel):
@@ -59,15 +54,6 @@ def edit_video(editing: VideoEditing, path: str):
     return merged_video_name
 
 
-def transcribe_audio(path: str) -> str:
-    with sr.AudioFile(path) as source:
-        audio = recognizer.record(source)
-
-    text = recognizer.recognize_vosk(audio, language="ru")
-
-    return json.loads(text)
-
-
 def extract_audio_from_video_file(path: str) -> str:
     audio_clip = AudioFileClip(path)
     path = path.replace(".mp4", "_audio.wav")
@@ -90,5 +76,7 @@ def get_youtube_video_formats(link: str):
 def download_youtube_video(link: str, options: YouTubeDlOptions):
     data = get_youtube_video_info(link=link, options=options, download=True)
     file_name = data.get("requested_downloads", [])[0].get("filename")
-    path: list[str] = file_name.split('\\')
-    return path[-1] if len(path) > 1 else path
+    path_win = file_name.split('\\')
+    path = file_name.split('/')
+    path: list[str] = path if len(path) > 1 else path_win
+    return path[-1]
