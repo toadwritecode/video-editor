@@ -183,7 +183,6 @@ async def login_for_access_token(
                        full_name=user.full_name)
     return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer", data=user_schema)
 
-
 @router.post('/signup', summary="Create new user", response_model=SignUpSchema)
 async def create_user(data: SignUpSchema):
     return _create_user(auth_repo, data)

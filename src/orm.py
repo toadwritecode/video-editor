@@ -3,7 +3,7 @@
 from sqlalchemy import (Table, MetaData,
                         create_engine, Column,
                         Integer, String,
-                        ForeignKey)
+                        ForeignKey, UUID)
 from sqlalchemy.orm import registry, relationship
 from conf.config import BASE_DIR
 import models
@@ -37,7 +37,7 @@ refresh_tokens = Table("refresh_tokens",
 files = Table("files",
               metadata,
               Column("id", Integer, primary_key=True, autoincrement=True),
-              Column("uuid", String(50)),
+              Column("uuid", UUID),
               Column("path", String(255)),
               Column("name", String(255)),
               Column("user_id", ForeignKey("users.id"))

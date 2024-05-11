@@ -1,3 +1,5 @@
+import os
+import uuid
 from enum import Enum
 
 from fastapi import FastAPI, UploadFile, File, Depends, APIRouter, Query, HTTPException
@@ -11,8 +13,7 @@ from repository import Repository
 from schemas.actions_schema import VideoEditing
 from security import router as auth_router, get_current_user
 from services import handlers
-from queries import queries
-from utils.video import transcribe_audio, get_youtube_video_formats, YouTubeDlOptions
+from utils.video import get_youtube_video_formats, YouTubeDlOptions
 app = FastAPI()
 
 origins = ["*"]
@@ -46,8 +47,9 @@ class AvailableFormats(str, Enum):
         return value in cls._value2member_map_
 
 
-def _check_available_formats(filename: str):
-    format_ = filename.split('.')[1]
+def _check_available_formats(filename: uuid.UUID):
+    name = repository.get_file_by_uuid(filename).name
+    format_ = name.split('.')[1]
     if not AvailableFormats.has_value(format_):
         raise HTTPException(status_code=422, detail=[
             {"type": "UnsupportedFormat",
@@ -58,17 +60,24 @@ def _check_available_formats(filename: str):
 
 
 # Files
-@file_router.get("/{filename}")
-async def get_file(filename: str, current_user=Depends(get_current_user)):
-    path = queries.get_path_user_file(repository, current_user.username, filename)
-    if not path:
+@app.get("/files/{id}")
+async def get_file(id: uuid.UUID):
+    file = handlers.get_file_by_uuid(repository, id)
+    if not file:
         raise HTTPException(status_code=404, detail="File is not exists")
-    return FileResponse(path=path)
+    return FileResponse(path=file.path)
 
+
+@file_router.post("/generate-id")
+async def get_confirmation(filename: str):
+    id = uuid.uuid4()
+    handlers.update_file_uuid_by_name(repository, id, filename)
+    return id
 
 @file_router.get("/")
 async def get_available_uploading_files(current_user=Depends(get_current_user)):
-    files = queries.get_user_available_files(repository, current_user.username)
+    with repository:
+        files = repository.get_user_available_files(current_user.username)
     return JSONResponse(content=files)
 
 
@@ -105,28 +114,32 @@ async def get_available_formats(link: str):
 
 # Editing
 @video_router.post("/crop")
-async def crop_video_file(editing: VideoEditing, filename: str = Depends(_check_available_formats),
+async def crop_video_file(editing: VideoEditing,
+                          filename: uuid.UUID = Depends(_check_available_formats),
                           current_user=Depends(get_current_user)):
 
     task_id = create_task(func=handlers.edit_user_video, kwargs={'editing': editing,
-                                                                 'username': current_user.username,
-                                                                 'filename': filename})
+                                                                 'user_id': current_user.id,
+                                                                 'file_uuid': filename})
     return JSONResponse(content={'taskId': str(task_id)})
 
 
 @video_router.post("/exacting-audio")
-async def exact_audio_from_video_file(filename: str = Depends(_check_available_formats),
+async def exact_audio_from_video_file(filename: uuid.UUID = Depends(_check_available_formats),
                                       current_user=Depends(get_current_user)):
-    task_id = create_task(func=handlers.extract_user_audio_from_video_file,
-                          kwargs={'username': current_user.username, "filename": filename})
+
+    task_id = create_task(func=handlers.extract_user_audio_from_video_file, kwargs={'user_id': current_user.id,
+                                                                                    "file_uuid": filename})
     return JSONResponse(content={'taskId': str(task_id)})
 
 
 @video_router.post("/transcribing-audio")
-async def exact_text_from_audio(filename: str = Depends(_check_available_formats)):
-    path = str(STORAGE_DIR / filename)
+async def exact_text_from_audio(filename: uuid.UUID = Depends(_check_available_formats),
+                                current_user=Depends(get_current_user)):
 
-    task_id = create_task(func=transcribe_audio, kwargs={'path': path})
+    task_id = create_task(func=handlers.transcribe_text_from_audio_file, kwargs={'file_uuid': filename,
+                                                                                 'user_id': current_user.id})
+
     return JSONResponse(content={'taskId': str(task_id)})
 
 

@@ -1,11 +1,13 @@
+import uuid
+
 from fastapi import UploadFile
 
 import models
-import queries.queries
 from conf.config import settings, BASE_DIR
 from repository import Repository
 from schemas.actions_schema import VideoEditing
-from utils.video import download_youtube_video, YouTubeDlOptions, extract_audio_from_video_file, edit_video
+from utils.video import download_youtube_video, YouTubeDlOptions, extract_audio_from_video_file, edit_video, transcribe_audio
+
 
 STORAGE_DIR = BASE_DIR / settings.STORAGE_NAME
 
@@ -46,46 +48,77 @@ def save_user_file_from_youtube(link: str, options: YouTubeDlOptions, username: 
         pass
 
 
-def extract_user_audio_from_video_file(username: str, filename: str):
-    repository = Repository()
+def extract_user_audio_from_video_file(
+    user_id: int,
+    file_uuid: uuid.UUID
+):
+    repo = Repository()
 
-    user_file_path = queries.queries.get_path_user_file(repository, username, filename)
+    with repo:
+        file = repo.get_file_by_file_id_and_user_id(file_uuid, user_id)
+        if not file:
+            return
 
-    if not user_file_path:
-        return
+        extracted_audio_filename = extract_audio_from_video_file(file.path)
 
-    filename = extract_audio_from_video_file(user_file_path)
+        file_for_save = models.File(extracted_audio_filename, None, user_id)
+        try:
+            with repo:
+                repo.add_file(file_for_save)
+                repo.commit()
 
-    file = models.File(filename)
-    try:
-        with repository:
-            user = repository.get(username)
-            user.append_file(file)
-            repository.add(user)
-            repository.commit()
-
-        return filename
-    except models.FileError:
-        pass
+            return extracted_audio_filename
+        except models.FileError:
+            pass
 
 
-def edit_user_video(editing: VideoEditing, username, filename):
-    repository = Repository()
-    user_file_path = queries.queries.get_path_user_file(repository, username, filename)
 
-    if not user_file_path:
-        return
+def edit_user_video(
+    editing: VideoEditing,
+    user_id: int,
+    file_uuid: uuid.UUID
+):
+    repo = Repository()
 
-    filename = edit_video(editing, user_file_path)
+    with repo:
+        file = repo.get_file_by_file_id_and_user_id(file_uuid, user_id)
+        if not file:
+            return
 
-    file = models.File(filename)
-    try:
-        with repository:
-            user = repository.get(username)
-            user.append_file(file)
-            repository.add(user)
-            repository.commit()
+        edited_filename = edit_video(editing, file.path)
+        file_for_save = models.File(edited_filename, None, user_id)
 
-        return filename
-    except models.FileError:
-        pass
+        try:
+            with repo:
+                repo.add_file(file_for_save)
+                repo.commit()
+
+            return edited_filename
+        except models.FileError:
+            pass
+
+
+def transcribe_text_from_audio_file(
+    user_id: int,
+    file_uuid: uuid.UUID
+):
+    repo = Repository()
+
+    with repo:
+        file = repo.get_file_by_file_id_and_user_id(file_uuid, user_id)
+        if not file:
+            return
+
+        return transcribe_audio(file.path)
+
+def get_file_by_uuid(repo: Repository, id: uuid.UUID):
+    return repo.get_file_by_uuid(id)
+
+
+def update_file_uuid_by_name(repo: Repository,
+                             id: uuid.UUID,
+                             name: str):
+    file = repo.get_file_by_name(name)
+    file.uuid = id
+    repo.commit()
+

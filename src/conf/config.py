@@ -8,10 +8,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 class Settings(BaseSettings):
     AUTH_API_LOGIN: str = ''
     AUTH_API_PASSWORD: str = ''
-    SECURITY_ENABLED: bool = False
+    SECURITY_ENABLED: bool = True
     STORAGE_NAME: str = "storage"
-    SECRET_KEY: str
-    REFRESH_KEY: str
+    SECRET_KEY: str = ''
+    REFRESH_KEY: str = ''
 
     class Config:
         case_sensitive = True
