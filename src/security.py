@@ -216,6 +216,6 @@ def get_new_access_token(token: RefreshSchema):
 
     new_access_token = create_access_token(refresh_data.dict())
     return {
-        "accessToken": new_access_token,
+        "access": new_access_token,
         "tokenType": "Bearer"
     }
