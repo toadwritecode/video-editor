@@ -74,3 +74,7 @@ class Repository:
                 "format": file.name.split('.')[-1]
             } for file in files]
             return files
+
+    def delete_file(self, file: models.File):
+        self.session.delete(file)
+

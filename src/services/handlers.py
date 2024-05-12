@@ -1,3 +1,4 @@
+import os
 import uuid
 
 from fastapi import UploadFile
@@ -124,4 +125,19 @@ def update_file_uuid_by_name(repo: Repository,
         file = repo.get_file_by_name(name)
         file.uuid = id
         repo.commit()
+
+
+def delete_file(repo: Repository,
+                file_uuid: uuid.UUID,
+                user_id: int):
+    with repo:
+        file = repo.get_file_by_file_id_and_user_id(file_uuid, user_id)
+        file_path = file.path
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                repo.delete_file(file)
+                repo.commit()
+        except FileNotFoundError:
+            pass
 

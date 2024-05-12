@@ -4,7 +4,8 @@ from enum import Enum
 
 from fastapi import FastAPI, UploadFile, File, Depends, APIRouter, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse, JSONResponse
+from starlette import status
+from starlette.responses import FileResponse, JSONResponse, Response
 
 import models
 from async_tasks import create_task, get_result_task
@@ -66,6 +67,13 @@ async def get_file(id: uuid.UUID):
     if not file:
         raise HTTPException(status_code=404, detail="File is not exists")
     return FileResponse(path=file.path)
+
+
+@file_router.delete("/{id}")
+async def delete_file(id: uuid.UUID,
+                      current_user=Depends(get_current_user)):
+    handlers.delete_file(repository, id, current_user.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @file_router.post("/generate-id")
