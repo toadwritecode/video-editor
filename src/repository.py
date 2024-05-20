@@ -71,6 +71,7 @@ class Repository:
             files = [{
                 "name": file.name,
                 "path": file.path,
+                "text": file.extracted_text,
                 "format": file.name.split('.')[-1]
             } for file in files]
             return files

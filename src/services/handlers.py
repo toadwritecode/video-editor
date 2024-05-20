@@ -110,7 +110,9 @@ def transcribe_text_from_audio_file(
         if not file:
             return
 
-        return transcribe_audio(file.path)
+        text_from_audio = transcribe_audio(file.path)
+        update_file_extracted_text_by_uuid(file_uuid, text_from_audio)
+        return text_from_audio
 
 
 def get_file_by_uuid(repo: Repository, id: uuid.UUID):
@@ -124,6 +126,15 @@ def update_file_uuid_by_name(repo: Repository,
     with repo:
         file = repo.get_file_by_name(name)
         file.uuid = id
+        repo.commit()
+
+
+def update_file_extracted_text_by_uuid(id: uuid.UUID, text: str):
+    repo = Repository()
+
+    with repo:
+        file = repo.get_file_by_uuid(id)
+        file.extracted_text = text
         repo.commit()
 
 

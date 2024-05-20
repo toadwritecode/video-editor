@@ -3,7 +3,7 @@
 from sqlalchemy import (Table, MetaData,
                         create_engine, Column,
                         Integer, String,
-                        ForeignKey, UUID)
+                        ForeignKey, UUID, Text)
 from sqlalchemy.orm import registry, relationship
 from conf.config import BASE_DIR
 import models
@@ -40,6 +40,7 @@ files = Table("files",
               Column("uuid", UUID),
               Column("path", String(255)),
               Column("name", String(255)),
+              Column("extracted_text", Text),
               Column("user_id", ForeignKey("users.id"))
               )
 

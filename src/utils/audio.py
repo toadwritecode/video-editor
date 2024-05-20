@@ -19,6 +19,11 @@ def generate_audio_chunks(path: str, chunk_duration: int):
 
 
 def transcribe_audio(path: str) -> str:
+    """
+
+    Returns:
+        object: 
+    """
     results = []
 
     for audio in generate_audio_chunks(path, RECOGNIZE_CHUNK_DURATION):
