@@ -14,12 +14,13 @@ class FileError(Exception):
 class File:
     def __init__(self,
                  name: str,
+                 text: str | None = None,
                  path: str | None = None,
                  user_id: int = None):
         self.name = name
         self.path = path or str(STORAGE_DIR / name)
         self.user_id = user_id or None
-
+        self.text = text
 
     def __eq__(self, other):
         if not isinstance(other, File):

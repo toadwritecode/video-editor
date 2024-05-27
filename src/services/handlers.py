@@ -3,6 +3,8 @@ import uuid
 
 from fastapi import UploadFile
 
+from async_tasks import create_task
+from notes_extractor.app.singing_transcription import transcript_audio
 import models
 from conf.config import settings, BASE_DIR
 from repository import Repository
@@ -63,7 +65,7 @@ def extract_user_audio_from_video_file(
 
         extracted_audio_filename = extract_audio_from_video_file(file.path)
 
-        file_for_save = models.File(extracted_audio_filename, None, user_id)
+        file_for_save = models.File(extracted_audio_filename, user_id=user_id)
         try:
             with repo:
                 repo.add_file(file_for_save)
@@ -87,7 +89,7 @@ def edit_user_video(
             return
 
         edited_filename = edit_video(editing, file.path)
-        file_for_save = models.File(edited_filename, None, user_id)
+        file_for_save = models.File(edited_filename, user_id=user_id)
 
         try:
             with repo:
@@ -144,11 +146,26 @@ def delete_file(repo: Repository,
     with repo:
         file = repo.get_file_by_file_id_and_user_id(file_uuid, user_id)
         file_path = file.path
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                repo.delete_file(file)
-                repo.commit()
-        except FileNotFoundError:
-            pass
 
+        if not os.path.exists(file_path):
+            raise FileNotFoundError()
+
+        os.remove(file_path)
+        repo.delete_file(file)
+        repo.commit()
+
+def transcript_audio_file(
+        repo: Repository,
+        file_uuid: uuid.UUID,
+        user_id: int):
+    with repo:
+        file = repo.get_file_by_file_id_and_user_id(file_uuid, user_id)
+        if not file:
+            return
+
+    file_path = file.path
+
+    task_id = create_task(transcript_audio,
+                          kwargs=dict(path_save=STORAGE_DIR,
+                                      path_audio=file_path))
+    return task_id

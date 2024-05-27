@@ -1,4 +1,3 @@
-import os
 import uuid
 from enum import Enum
 
@@ -14,7 +13,9 @@ from repository import Repository
 from schemas.actions_schema import VideoEditing
 from security import router as auth_router, get_current_user
 from services import handlers
+from services.handlers import transcript_audio_file
 from utils.video import get_youtube_video_formats, YouTubeDlOptions
+
 app = FastAPI()
 
 origins = ["*"]
@@ -49,7 +50,8 @@ class AvailableFormats(str, Enum):
 
 
 def _check_available_formats(filename: uuid.UUID):
-    name = repository.get_file_by_uuid(filename).name
+    with repository:
+        name = repository.get_file_by_uuid(filename).name
     format_ = name.split('.')[1]
     if not AvailableFormats.has_value(format_):
         raise HTTPException(status_code=422, detail=[
@@ -82,6 +84,18 @@ async def get_confirmation(filename: str):
     handlers.update_file_uuid_by_name(repository, id, filename)
     return id
 
+
+@video_router.post("/transcribing-audio-by-notes")
+async def exact_notes_from_audio(file_id: uuid.UUID = Depends(_check_available_formats),
+                                 current_user=Depends(get_current_user)):
+    task_id = transcript_audio_file(repository, file_id, current_user.id)
+
+    if not task_id:
+        raise HTTPException(status_code=404)
+
+    return JSONResponse(content={'taskId': str(task_id)})
+
+
 @file_router.get("/")
 async def get_available_uploading_files(current_user=Depends(get_current_user)):
     with repository:
@@ -109,8 +123,8 @@ async def download_video_from_youtube(link: str,
                                       current_user=Depends(get_current_user)):
     options = YouTubeDlOptions(format=format_)
     task_id = create_task(func=handlers.save_user_file_from_youtube, kwargs={
-                                                                    'link': link, "options": options,
-                                                                    'username': current_user.username})
+        'link': link, "options": options,
+        'username': current_user.username})
     return JSONResponse(content={'taskId': str(task_id)})
 
 
@@ -125,7 +139,6 @@ async def get_available_formats(link: str):
 async def crop_video_file(editing: VideoEditing,
                           filename: uuid.UUID = Depends(_check_available_formats),
                           current_user=Depends(get_current_user)):
-
     task_id = create_task(func=handlers.edit_user_video, kwargs={'editing': editing,
                                                                  'user_id': current_user.id,
                                                                  'file_uuid': filename})
@@ -135,7 +148,6 @@ async def crop_video_file(editing: VideoEditing,
 @video_router.post("/exacting-audio")
 async def exact_audio_from_video_file(filename: uuid.UUID = Depends(_check_available_formats),
                                       current_user=Depends(get_current_user)):
-
     task_id = create_task(func=handlers.extract_user_audio_from_video_file, kwargs={'user_id': current_user.id,
                                                                                     "file_uuid": filename})
     return JSONResponse(content={'taskId': str(task_id)})
@@ -144,15 +156,26 @@ async def exact_audio_from_video_file(filename: uuid.UUID = Depends(_check_avail
 @video_router.post("/transcribing-audio")
 async def exact_text_from_audio(filename: uuid.UUID = Depends(_check_available_formats),
                                 current_user=Depends(get_current_user)):
-
     task_id = create_task(func=handlers.transcribe_text_from_audio_file, kwargs={'file_uuid': filename,
                                                                                  'user_id': current_user.id})
 
     return JSONResponse(content={'taskId': str(task_id)})
 
 
-# Get tasks result
+@video_router.post("/notes_segment/{task_id}")
+async def get_notes_segment(task_id: str):
+    result = get_result_task(task_id)
+    data = {}
+    times = []
+    notes = []
+    for time, note in result:
+        times.append(time)
+        notes.append(note)
+    data.update({"timeAxis": times, "noteAxis": notes})
+    return JSONResponse(content={'status': 'ok' if result else 'processing', 'data': data})
 
+
+# Get tasks result
 @video_router.get("/tasks/result")
 async def get_task_result(task_id: str = Query(alias="taskId")):
     result = get_result_task(task_id)
@@ -162,4 +185,3 @@ async def get_task_result(task_id: str = Query(alias="taskId")):
 app.include_router(video_router)
 app.include_router(auth_router)
 app.include_router(file_router)
-app.include_router(auth_router)

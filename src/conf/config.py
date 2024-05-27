@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     STORAGE_NAME: str = "storage"
     SECRET_KEY: str = ''
     REFRESH_KEY: str = ''
+    RECOGNITION_SERVER_URI: str = ''
 
     class Config:
         case_sensitive = True
@@ -19,3 +20,5 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+STORAGE_DIR = BASE_DIR / settings.STORAGE_NAME
