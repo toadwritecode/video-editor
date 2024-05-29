@@ -162,17 +162,20 @@ async def exact_text_from_audio(filename: uuid.UUID = Depends(_check_available_f
     return JSONResponse(content={'taskId': str(task_id)})
 
 
-@video_router.post("/notes_segment/{task_id}")
+@video_router.get("/notes_segment/{task_id}")
 async def get_notes_segment(task_id: str):
     result = get_result_task(task_id)
     data = {}
     times = []
     notes = []
-    for time, note in result:
+    freq = []
+    for time, note, freq_ in result:
         times.append(time)
         notes.append(note)
-    data.update({"timeAxis": times, "noteAxis": notes})
-    return JSONResponse(content={'status': 'ok' if result else 'processing', 'data': data})
+        freq.append(freq_)
+    data.update({"timeAxis": times, "noteAxis": notes, "freq": freq})
+    # return JSONResponse(content={'status': 'ok' if result else 'processing', 'data': data})
+    return FileResponse(path=str(STORAGE_DIR / "myplot.png"))
 
 
 # Get tasks result
@@ -180,7 +183,6 @@ async def get_notes_segment(task_id: str):
 async def get_task_result(task_id: str = Query(alias="taskId")):
     result = get_result_task(task_id)
     return JSONResponse(content={'status': 'ok' if result else 'processing', 'result': result})
-
 
 app.include_router(video_router)
 app.include_router(auth_router)

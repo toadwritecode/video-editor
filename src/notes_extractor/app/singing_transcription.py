@@ -115,7 +115,7 @@ def get_notes_segment(freq_segment) -> list:
     for time, freq in freq_segment:
         freq = float(freq)
         note = freq_to_note(freq) if freq else None
-        data.append((round(time, 2), note))
+        data.append((round(time, 2), note, freq))
     return data
 
 
