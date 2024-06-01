@@ -49,4 +49,4 @@ def pitch2note(pitch):
 
 def freq_to_note(freq: float):
     if freq:
-        return librosa.hz_to_note(freq)[0]
+        return librosa.hz_to_note(freq)
