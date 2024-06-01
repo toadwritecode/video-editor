@@ -1,3 +1,4 @@
+import dataclasses
 import uuid
 from enum import Enum
 
@@ -162,20 +163,47 @@ async def exact_text_from_audio(filename: uuid.UUID = Depends(_check_available_f
     return JSONResponse(content={'taskId': str(task_id)})
 
 
+@dataclasses.dataclass
+class Interval:
+    note: str
+    frequency: float
+    start: float = 0
+    end: float = 0
+
+
+def _form_intervals(notes_data: list[tuple[float, str, float]]) -> list[Interval]:
+    intervals = []
+    for idx, items in enumerate(notes_data):
+        time, note, freq = items
+
+        if not intervals:
+            if note:
+                intervals.append(Interval(note=note, start=time, frequency=freq))
+            continue
+
+        last_interval = intervals[-1]
+
+        if idx + 1 == len(notes_data):
+            if note and not last_interval.end:
+                last_interval.end = round(time - 0.01, 2)
+                intervals[-1] = last_interval
+            break
+
+        if note != last_interval.note:
+            if not last_interval.end:
+                last_interval.end = round(time - 0.01, 2)
+                intervals[-1] = last_interval
+            if note:
+                intervals.append(Interval(note=note, start=time, frequency=freq))
+    return intervals
+
+
 @video_router.get("/notes_segment/{task_id}")
 async def get_notes_segment(task_id: str):
     result = get_result_task(task_id)
-    data = {}
-    times = []
-    notes = []
-    freq = []
-    for time, note, freq_ in result:
-        times.append(time)
-        notes.append(note)
-        freq.append(freq_)
-    data.update({"timeAxis": times, "noteAxis": notes, "freq": freq})
-    # return JSONResponse(content={'status': 'ok' if result else 'processing', 'data': data})
-    return FileResponse(path=str(STORAGE_DIR / "myplot.png"))
+    intervals = [dataclasses.asdict(interval) for interval in _form_intervals(result)] if result else None
+    return JSONResponse(content={'status': 'ok' if result else 'processing',
+                                 'data': intervals})
 
 
 # Get tasks result
