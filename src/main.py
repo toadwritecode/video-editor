@@ -12,7 +12,7 @@ from async_tasks import create_task, get_result_task
 from conf.config import BASE_DIR, settings
 from repository import Repository
 from schemas.actions_schema import VideoEditing
-from security import router as auth_router, get_current_user
+from security import router as auth_router, get_current_user, get_content_maker
 from services import handlers
 from services.handlers import transcript_audio_file
 from utils.video import get_youtube_video_formats, YouTubeDlOptions
@@ -31,11 +31,13 @@ app.add_middleware(
 
 # private
 video_router = APIRouter(prefix='/video')
+content_maker_video_router = APIRouter(prefix="/video")
 file_router = APIRouter(prefix='/files')
 
 if settings.SECURITY_ENABLED:
     video_router.dependencies.append(Depends(get_current_user))
     file_router.dependencies.append(Depends(get_current_user))
+    content_maker_video_router.dependencies.append(Depends(get_content_maker))
 
 STORAGE_DIR = BASE_DIR / settings.STORAGE_NAME
 repository = Repository()
@@ -117,6 +119,16 @@ async def upload_file(file: UploadFile = File(), current_user: models.User = Dep
         ])
 
 
+@content_maker_video_router.post("/tag")
+async def add_tag():
+    pass
+
+
+@content_maker_video_router.delete("/tag")
+async def delete_tag():
+    pass
+
+
 # YouTube
 @file_router.get("/youtube/")
 async def download_video_from_youtube(link: str,
@@ -171,6 +183,12 @@ class Interval:
     end: float = 0
 
 
+@dataclasses.dataclass
+class NotesSegmentSchema:
+    status: str
+    data: list[Interval] | None
+
+
 def _form_intervals(notes_data: list[tuple[float, str, float]]) -> list[Interval]:
     intervals = []
     for idx, items in enumerate(notes_data):
@@ -198,11 +216,11 @@ def _form_intervals(notes_data: list[tuple[float, str, float]]) -> list[Interval
     return intervals
 
 
-@video_router.get("/notes_segment/{task_id}")
+@video_router.get("/notes_segment/{task_id}", response_model=NotesSegmentSchema)
 async def get_notes_segment(task_id: str):
     result = get_result_task(task_id)
     intervals = [dataclasses.asdict(interval) for interval in _form_intervals(result)] if result else None
-    return JSONResponse(content={'status': 'ok' if result else 'processing',
+    return NotesSegmentSchema(**{'status': 'ok' if result else 'processing',
                                  'data': intervals})
 
 
@@ -215,3 +233,4 @@ async def get_task_result(task_id: str = Query(alias="taskId")):
 app.include_router(video_router)
 app.include_router(auth_router)
 app.include_router(file_router)
+app.include_router(content_maker_video_router)

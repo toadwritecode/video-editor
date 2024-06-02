@@ -133,11 +133,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     return user
 
 
-async def get_current_active_user(
+async def get_content_maker(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    if current_user.role != AvailableRoles.content_maker:
+        raise HTTPException(status_code=400, detail="This operation available only for content maker role!")
     return current_user
 
 
@@ -182,6 +182,7 @@ async def login_for_access_token(
                        role=user.role,
                        full_name=user.full_name)
     return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer", data=user_schema)
+
 
 @router.post('/signup', summary="Create new user", response_model=SignUpSchema)
 async def create_user(data: SignUpSchema):
