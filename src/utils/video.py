@@ -1,5 +1,6 @@
 import os
 import uuid
+import moviepy.video.fx.all as vfx
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 from moviepy.video.compositing.concatenate import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -29,8 +30,8 @@ def _cut_video_file(path: str, start_time: int, end_time: int, new_file_name: st
 def _merge_video_files(paths: list[str]):
     loaded_video_list = []
     merged_video_name = f"{paths[0].split('_')[0]}_merged.mp4"
-    for video in paths:
-        loaded_video_list.append(VideoFileClip(video))
+    for path in paths:
+        loaded_video_list.append(VideoFileClip(path))
 
     final_clip = concatenate_videoclips(loaded_video_list)
 
@@ -38,20 +39,35 @@ def _merge_video_files(paths: list[str]):
     return merged_video_name.split('\\')[-1]
 
 
-def edit_video(editing: VideoEditing, path: str):
+def _apply_video_speed_effect(path: str, speed: float):
+    video = VideoFileClip(path)
+    speed_modified_video_name = f"{path.split('.')[0]}_modified_speed.mp4"
+    final_clip = video.fx(vfx.speedx, speed)
+    final_clip.write_videofile(speed_modified_video_name)
+    return speed_modified_video_name.split('\\')[-1]
+
+
+def edit_video(editing: VideoEditing, path: str) -> str | None:
     frame_paths = []
+    edited_video_path = None
     for frame in editing.frames:
-        piece_id = str(uuid.uuid4())
-        frame_path = _cut_video_file(path, frame.cut_from, frame.cut_to, piece_id)
+        frame_id = str(uuid.uuid4())
+        frame_path = _cut_video_file(path, frame.cut_from, frame.cut_to, frame_id)
+        if frame.speed:
+            frame_path = _apply_video_speed_effect(path, frame.speed)
         frame_paths.extend([frame_path] * frame.times)
 
-    merged_video_name = _merge_video_files(frame_paths)
+    if frame_paths:
+        edited_video_path = _merge_video_files(frame_paths)
+
+    if editing.speed:
+        edited_video_path = _apply_video_speed_effect(path, editing.speed)
 
     # # remove used frames
     for path in set(frame_paths):
         os.remove(path)
 
-    return merged_video_name
+    return edited_video_path
 
 
 def extract_audio_from_video_file(path: str) -> str:
