@@ -1,3 +1,4 @@
+import dataclasses
 import os
 import uuid
 
@@ -16,6 +17,11 @@ from utils.audio import transcribe_audio
 STORAGE_DIR = BASE_DIR / settings.STORAGE_NAME
 
 
+@dataclasses.dataclass
+class TagSchema:
+    name: str
+
+
 def save_user_file(repo: Repository, username: str, file: UploadFile):
     filename = file.filename
     file_path = STORAGE_DIR / filename
@@ -32,6 +38,17 @@ def save_user_file(repo: Repository, username: str, file: UploadFile):
         repo.commit()
 
     return filename
+
+
+def get_vocal_lesson_recommendation(repo: Repository, username: str):
+    with repo:
+        user = repo.get(username)
+
+
+def add_video_tag(repo: Repository, user_id: int, file_id: uuid.UUID, tags: list[TagSchema]):
+    with repo:
+        file = repo.get_file_by_file_id_and_user_id(file_id, user_id)
+        file.tags.append()
 
 
 def save_user_file_from_youtube(link: str, options: YouTubeDlOptions, username: str):
@@ -154,6 +171,7 @@ def delete_file(repo: Repository,
         repo.delete_file(file)
         repo.commit()
 
+
 def transcript_audio_file(
         repo: Repository,
         file_uuid: uuid.UUID,
@@ -169,3 +187,5 @@ def transcript_audio_file(
                           kwargs=dict(path_save=STORAGE_DIR,
                                       path_audio=file_path))
     return task_id
+
+

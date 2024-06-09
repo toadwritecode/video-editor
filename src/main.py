@@ -14,7 +14,7 @@ from repository import Repository
 from schemas.actions_schema import VideoEditing
 from security import router as auth_router, get_current_user, get_content_maker
 from services import handlers
-from services.handlers import transcript_audio_file
+from services.handlers import transcript_audio_file, TagSchema
 from utils.video import get_youtube_video_formats, YouTubeDlOptions
 
 app = FastAPI()
@@ -120,7 +120,7 @@ async def upload_file(file: UploadFile = File(), current_user: models.User = Dep
 
 
 @content_maker_video_router.post("/tag")
-async def add_tag():
+async def add_tag(tag: list[TagSchema]):
     pass
 
 

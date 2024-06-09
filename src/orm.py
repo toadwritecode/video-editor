@@ -1,5 +1,3 @@
-
-
 from sqlalchemy import (Table, MetaData,
                         create_engine, Column,
                         Integer, String,
@@ -7,7 +5,6 @@ from sqlalchemy import (Table, MetaData,
 from sqlalchemy.orm import registry, relationship
 from conf.config import BASE_DIR
 import models
-from models import User
 
 db_path = BASE_DIR / "db/new.db"
 
@@ -44,28 +41,31 @@ files = Table("files",
               Column("user_id", ForeignKey("users.id"))
               )
 
-tags = Table("tags",
+tags = Table("singing_mistakes",
              metadata,
              Column("id", Integer, primary_key=True, autoincrement=True),
              Column("name", String(255)))
 
-video_tags = Table("video_tags",
-                   metadata,
-                   Column("id", Integer, primary_key=True, autoincrement=True),
-                   Column("file_id", ForeignKey("files.id")),
-                   Column("tag_id", ForeignKey("tags.id")))
+vocal_lesson_singing_mistakes = Table("vocal_lesson_singing_mistakes",
+                                      metadata,
+                                      Column("id", Integer, primary_key=True, autoincrement=True),
+                                      Column("file_id", ForeignKey("files.id")),
+                                      Column("mistake_id", ForeignKey("singing_mistakes.id")))
 
 
 def start_mappers():
     mapper_registry.metadata.create_all(engine)
-    files_mapper = mapper_registry.map_imperatively(models.File, files)
-    # tags_mapper = mapper_registry.map_imperatively(Tag, tags)
-    # tokens_mapper = mapper_registry.map_imperatively(RefreshToken, refresh_tokens)
+    # tags_mapper = mapper_registry.map_imperatively(models.Tag, tags)
+    files_mapper = mapper_registry.map_imperatively(models.File, files,
+                                                    # properties={"tags": relationship(tags_mapper)}
+                                                    )
     mapper_registry.map_imperatively(
-        User,
+        models.User,
         users,
         properties={"files": relationship(files_mapper)}
     )
+    # mapper_registry.map_imperatively(models.File,
+    #                                  )
 
 
 if __name__ == '__main__':
