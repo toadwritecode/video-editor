@@ -29,7 +29,7 @@ def _cut_video_file(path: str, start_time: int, end_time: int, new_file_name: st
 
 def _merge_video_files(paths: list[str]):
     loaded_video_list = []
-    merged_video_name = f"{paths[0].split('_')[0]}_merged.mp4"
+    merged_video_name = f"{paths[0].split('_')[0]}_modified_merged.mp4"
     for path in paths:
         loaded_video_list.append(VideoFileClip(path))
 
@@ -41,7 +41,7 @@ def _merge_video_files(paths: list[str]):
 
 def _apply_video_speed_effect(path: str, speed: float):
     video = VideoFileClip(path)
-    speed_modified_video_name = f"{path.split('.')[0]}_modified_speed.mp4"
+    speed_modified_video_name = f"{path.split('.')[0]}_modified.mp4"
     final_clip = video.fx(vfx.speedx, speed)
     final_clip.write_videofile(speed_modified_video_name)
     return speed_modified_video_name.split('\\')[-1]
